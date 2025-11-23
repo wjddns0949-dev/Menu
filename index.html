@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>메뉴 룰렛</title>
+
+  <!-- GSAP CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f5f9;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #333;
+    }
+
+    .app {
+      background: #ffffff;
+      padding: 20px 16px 24px;
+      border-radius: 18px;
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(0,0,0,0.03);
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 18px;
+    }
+
+    /* 왼쪽: 설정 영역 */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 4px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      resize: vertical;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+      line-height: 1.5;
+      outline: none;
+      transition: border 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    textarea:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 1px rgba(99,102,241,0.2);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #6366f1;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 6px 14px rgba(99,102,241,0.35);
+      transition:
+        transform 0.1s ease,
+        box-shadow 0.1s ease,
+        background 0.15s ease,
+        opacity 0.15s ease;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    button:not(:disabled):active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 2px 7px rgba(99,102,241,0.3);
+    }
+
+    .reset-btn {
+      background: transparent;
+      color: #666;
+      box-shadow: none;
+      padding-inline: 14px;
+    }
+
+    .reset-btn:hover {
+      background: #f3f4ff;
+    }
+
+    .result-box {
+      margin-top: 16px;
+      padding: 14px 14px;
+      border-radius: 12px;
+      background: #fafafa;
+      border: 1px dashed #e1e1e1;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .result-label {
+      font-size: 12px;
+      color: #777;
+    }
+
+    .result-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    /* 오른쪽: 룰렛 영역 */
+    .wheel-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .wheel-wrapper {
+      position: relative;
+      width: min(320px, 85vw);
+      aspect-ratio: 1 / 1;
+    }
+
+    .wheel-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* 포인터 (위쪽 삼각형) */
+    .pointer {
+      position: absolute;
+      top: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 24px solid #f97316; /* 주황색 포인터 */
+      filter: drop-shadow(0 3px 3px rgba(0,0,0,0.2));
+      z-index: 2;
+    }
+
+    .pointer::after {
+      content: "";
+      position: absolute;
+      top: 9px;
+      left: -10px;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+    }
+
+    /* SVG 스타일 */
+    .wheel-bg {
+      fill: #f9fafb;
+    }
+
+    .slice {
+      stroke: #ffffff;
+      stroke-width: 2;
+      cursor: pointer;
+    }
+
+    .center-dot {
+      fill: #111827;
+    }
+
+    .slice-label {
+      font-size: 12px;
+      fill: #111827;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .wheel-caption {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+    }
+
+    /* 폭죽(컨페티) 효과 */
+    #confetti-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: visible;
+      z-index: 999;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      width: 8px;
+      height: 14px;
+      border-radius: 2px;
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 왼쪽: 메뉴 설정 -->
+    <div class="controls">
+      <div>
+        <h1 id="roulette-title">메뉴 룰렛 🎲</h1>
+        <div class="subtitle">메뉴를 입력하고 룰렛을 돌려서 오늘의 선택을 정해보세요!</div>
+      </div>
+
+      <div>
+        <div class="label">메뉴 목록 (줄바꿈으로 구분)</div>
+        <textarea id="menu-input" spellcheck="false"></textarea>
+        <div class="hint">
+          예시) 김치찌개↵비빔밥↵돈까스↵라면 …
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="spin-btn">
+          <span>룰렛 돌리기</span> <span>⚡</span>
+        </button>
+        <button id="reset-btn" class="reset-btn" type="button">기본 메뉴로 되돌리기</button>
+      </div>
+
+      <div class="result-box">
+        <span class="result-label">오늘의 추천 메뉴</span>
+        <span id="result-text" class="result-value">아직 룰렛을 돌리지 않았어요</span>
+      </div>
+    </div>
+
+    <!-- 오른쪽: 룰렛 -->
+    <div class="wheel-container">
+      <div class="wheel-wrapper">
+        <div class="pointer"></div>
+
+        <!-- SVG 룰렛 -->
+        <svg id="wheel" class="wheel-svg" viewBox="-150 -150 300 300">
+          <!-- 전체 그룹을 회전시킨다 -->
+          <g id="wheel-group">
+            <!-- 바탕 원 -->
+            <circle class="wheel-bg" r="148"></circle>
+            <!-- 파이 조각들 -->
+            <g id="slices"></g>
+            <!-- 중앙 점 -->
+            <circle class="center-dot" r="6"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="wheel-caption">
+        포인터가 가리키는 메뉴가 오늘의 선택이에요 🍽️
+      </div>
+    </div>
+  </div>
+
+  <div id="confetti-container"></div>
+
+  <script>
+    const menuInput = document.getElementById("menu-input");
+    const spinBtn   = document.getElementById("spin-btn");
+    const resetBtn  = document.getElementById("reset-btn");
+    const resultText = document.getElementById("result-text");
+    const confettiContainer = document.getElementById("confetti-container");
+    const rouletteTitle = document.getElementById("roulette-title");
+    const defaultTitleText = "메뉴 룰렛";
+    const titleEmoji = " 🎲";
+    let currentTitle = defaultTitleText;
+
+    function applyTitle(title) {
+      currentTitle = title && title.length > 0 ? title : defaultTitleText;
+      if (rouletteTitle) {
+        rouletteTitle.textContent = currentTitle + titleEmoji;
+      }
+      document.title = currentTitle;
+    }
+
+    applyTitle(currentTitle);
+
+    if (rouletteTitle) {
+      rouletteTitle.addEventListener("click", () => {
+        const next = prompt("룰렛 이름을 입력하세요 (비우면 기본값으로 돌아갑니다)", currentTitle);
+        if (next === null) return;
+        applyTitle(next.trim());
+      });
+    }
+
+    const wheelGroup = document.getElementById("wheel-group");
+    const slicesGroup = document.getElementById("slices");
+
+    // 기본 메뉴
+    const defaultMenus = [
+      "김치찌개",
+      "된장찌개",
+      "비빔밥",
+      "돈까스",
+      "라면",
+      "햄버거",
+      "초밥",
+      "샐러드"
+    ];
+
+    // 텍스트에 기본 메뉴 세팅
+    function setDefaultMenus() {
+      menuInput.value = defaultMenus.join("\n");
+    }
+    setDefaultMenus();
+
+    // 문자열 입력 → 배열로 변환
+    function getMenusFromInput() {
+      return menuInput.value
+        .split(/\n+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+
+    // 룰렛 SVG 파이 조각 만들기
+    function buildWheel(labels) {
+      slicesGroup.innerHTML = ""; // 이전 조각 제거
+
+      const count = labels.length;
+      if (count === 0) return;
+
+      const radius = 140;
+      const angleStep = 360 / count;
+
+      for (let i = 0; i < count; i++) {
+        const startAngle = -90 + i * angleStep;
+        const endAngle   = startAngle + angleStep;
+
+        const startRad = (Math.PI / 180) * startAngle;
+        const endRad   = (Math.PI / 180) * endAngle;
+
+        const x1 = radius * Math.cos(startRad);
+        const y1 = radius * Math.sin(startRad);
+        const x2 = radius * Math.cos(endRad);
+        const y2 = radius * Math.sin(endRad);
+
+        const largeArcFlag = angleStep > 180 ? 1 : 0;
+
+        const pathData = [
+          `M 0 0`,
+          `L ${x1} ${y1}`,
+          `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+          `Z`
+        ].join(" ");
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", pathData);
+        path.setAttribute("class", "slice");
+
+        // 색상: HSL을 이용해 조각마다 다른 색 지정
+        const hue = (i * (360 / count)) % 360;
+        path.style.fill = `hsl(${hue}, 75%, 72%)`;
+
+        slicesGroup.appendChild(path);
+
+        // 텍스트(조각 중앙)
+        const centerAngle = startAngle + angleStep / 2;
+        const centerRad = (Math.PI / 180) * centerAngle;
+        const textRadius = radius * 0.6;
+        const tx = textRadius * Math.cos(centerRad);
+        const ty = textRadius * Math.sin(centerRad);
+
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", tx);
+        text.setAttribute("y", ty);
+        text.setAttribute("class", "slice-label");
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("dominant-baseline", "middle");
+        text.textContent = labels[i];
+
+        slicesGroup.appendChild(text);
+      }
+
+      // 회전값 초기화
+      gsap.set(wheelGroup, { rotation: 0, svgOrigin: "0 0" });
+    }
+
+    // 처음 한 번 기본 메뉴로 룰렛 생성
+    buildWheel(defaultMenus);
+
+    function fireConfetti() {
+      const colors = ["#f97316", "#facc15", "#22c55e", "#0ea5e9", "#6366f1", "#ec4899"];
+      const pieces = 140;
+
+      for (let i = 0; i < pieces; i++) {
+        const piece = document.createElement("div");
+        piece.className = "confetti-piece";
+
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const startX = Math.random() * window.innerWidth;
+        const startY = -20 - Math.random() * 80;
+
+        confettiContainer.appendChild(piece);
+
+        gsap.set(piece, {
+          x: startX,
+          y: startY,
+          backgroundColor: color,
+          opacity: 1,
+          rotation: gsap.utils.random(-90, 90)
+        });
+
+        gsap.to(piece, {
+          duration: gsap.utils.random(1.8, 2.6),
+          y: window.innerHeight + 40,
+          x: startX + gsap.utils.random(-120, 120),
+          rotation: gsap.utils.random(-720, 720),
+          ease: "power2.out",
+          delay: gsap.utils.random(0, 0.25),
+          onComplete: () => piece.remove()
+        });
+      }
+    }
+
+    // 룰렛 돌리기
+    function spinWheel() {
+      const menus = getMenusFromInput();
+
+      if (menus.length === 0) {
+        alert("최소 1개 이상의 메뉴를 입력해 주세요!");
+        return;
+      }
+
+      // 메뉴 리스트가 변경되었을 수 있으니, 다시 룰렛 생성
+      buildWheel(menus);
+
+      const count = menus.length;
+      const angleStep = 360 / count;
+
+      // 랜덤으로 선택할 인덱스
+      const index = Math.floor(Math.random() * count);
+      const selectedMenu = menus[index];
+
+      // 포인터는 -90도(위쪽) 방향을 가리킨다고 가정
+      // index 번째 조각의 중앙 각도 = -90 + angleStep * (index + 0.5)
+      // 그 중앙 각도가 포인터(-90도)와 일치하도록 회전시킨다.
+      const baseRotation = -angleStep * (index + 0.5);
+
+      // 여러 바퀴를 돌게 하기 위해 3~5바퀴 추가
+      const extraTurns = 3 + Math.floor(Math.random() * 3); // 3,4,5
+      const targetRotation = baseRotation + 360 * extraTurns;
+
+      // 버튼 비활성화
+      spinBtn.disabled = true;
+
+      // GSAP 애니메이션 (서서히 속도 줄어드는 ease)
+      gsap.to(wheelGroup, {
+        rotation: targetRotation,
+        duration: 4.5,
+        ease: "power3.out",
+        svgOrigin: "0 0",
+        onComplete: () => {
+          resultText.textContent = selectedMenu;
+
+          // 결과 텍스트 튀어나오는 애니메이션
+          gsap.fromTo(
+            resultText,
+            { scale: 0.6, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" }
+          );
+
+          // 폭죽 효과 발사
+          fireConfetti();
+
+          spinBtn.disabled = false;
+        }
+      });
+    }
+
+    spinBtn.addEventListener("click", spinWheel);
+
+    resetBtn.addEventListener("click", () => {
+      setDefaultMenus();
+      buildWheel(defaultMenus);
+      resultText.textContent = "아직 룰렛을 돌리지 않았어요";
+    });
+  </script>
+</body>
+</html>
