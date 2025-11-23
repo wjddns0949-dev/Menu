@@ -4,6 +4,33 @@
   <meta charset="UTF-8" />
   <title>메뉴 룰렛</title>
 
+  <!-- 반응형 뷰포트 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- SEO -->
+  <meta name="description" content="메뉴 룰렛 - 뭐 먹을지 고민될 때 대신 골라주는 추천 룰렛 앱" />
+
+  <!-- PWA: manifest & theme-color & icons -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="apple-touch-icon" href="icon.png" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="메뉴 룰렛" />
+  <meta property="og:description" content="뭐 먹을지, 뭐 할지 대신 골라주는 Menu Roulette Recommendation App" />
+  <meta property="og:image" content="og_image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://wjddns0949-dev.github.io/Menu/" />
+
+  <!-- Twitter 카드 (옵션) -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="메뉴 룰렛" />
+  <meta name="twitter:description" content="뭐 먹을지, 뭐 할지 대신 골라주는 Menu Roulette Recommendation App" />
+  <meta name="twitter:image" content="og_image.png" />
+
   <!-- GSAP CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
@@ -530,6 +557,17 @@
       buildWheel(defaultMenus);
       resultText.textContent = "아직 룰렛을 돌리지 않았어요";
     });
+
+    // PWA: 서비스 워커 등록
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("./sw.js")
+          .catch((err) => {
+            console.error("ServiceWorker registration failed:", err);
+          });
+      });
+    }
   </script>
 </body>
 </html>
